@@ -1,0 +1,6 @@
+#ignore folder
+_pycache_/
+.vscode/
+.Model/
+.Result/
+.Trash/
