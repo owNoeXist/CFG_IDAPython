@@ -1,3 +1,4 @@
+#coding=utf-8
 import os
 import sys
 import json
@@ -6,43 +7,36 @@ from idc import *
 from idaapi import *
 from idautils import *
 
-from CFG import *
+from PCFG import *
 from Data import GenerateJson
+from Instruction import SIGN,SAVEDIR
 
 if __name__ == '__main__':
-	#wait for completing analysis
+	#wait for IDA pro completing analysis
     autoWait()
-    #Read paraments from file
-    file=open("C:/Users/nocan/Desktop/CEC/BinaryAnalyze/Paraments",'rb')
-    sign=int(file.readline()[0])
-    path=file.readline()
-    file.close()
-    print("{0}\n{1}".format(sign,path))
     
     #analyze the disassembly code,generate cfg and feature
-    file=open(path,'a')
-    for func_sea in Functions(SegStart(FirstSeg())):
+    file=open(SAVEDIR,'a')
+    for funcSEA in Functions(SegStart(FirstSeg())):
         #Only analyze seg in .text
-        segname=SegName(func_sea)
+        segname=SegName(funcSEA)
         if segname not in ['.text']:
             continue
         #Ignore functions that gcc added 
-        func_name = get_unified_funcname(func_sea)
-        if func_name in ['_start','deregister_tm_clones','register_tm_clones', '__do_global_dtors_aux','__do_global_dtors_aux','__libc_csu_fini','frame_dummy']:
+        funcName = get_unified_funcname(funcSEA)
+        if funcName in ['_start','deregister_tm_clones','register_tm_clones', '__do_global_dtors_aux','__do_global_dtors_aux','__libc_csu_fini','frame_dummy']:
             continue
-        print func_name
-        #Generate CFG and feature
-        func_ea = get_func(func_sea)
-        '''
-        if CheckInstruct(func_ea,sign):
+        #Ignore functions that have other instruction
+        funcEA = get_func(funcSEA)
+        if CheckInstruct(funcEA,SIGN):
             continue
-        '''
-        func_cfg = GenerateCFG(func_ea,sign)
-        if len(func_cfg)==1:
+        #Generate PCFG
+        pcfg = GeneratePCFG(funcEA,SIGN)
+        if len(pcfg)==1:
             continue
-        raw_json = GenerateJson(func_name, func_cfg, sign)
-        file.write(json.dumps(raw_json))
-        file.write('\n')
+        print funcName
+        rawJson = GenerateJson(funcName, pcfg)
+        file.write(json.dumps(rawJson)+'\n')
     file.close()
     
     #Exit program
