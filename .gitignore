@@ -1,4 +1,3 @@
-#ignore folder
-/.vscode/
+/*
+!*.py
 Trash.py
-*.pyc

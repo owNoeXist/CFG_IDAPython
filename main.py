@@ -7,9 +7,10 @@ from idc import *
 from idaapi import *
 from idautils import *
 
-from PCFG import *
+from PCFG import GeneratePCFG,get_unified_funcname,CheckInstruct
 from Data import GenerateJson
-from Instruction import SIGN,SAVEDIR
+from Paraments import SIGN,SAVEDIR
+from Instruction import x86_I,MIPS_I
 
 if __name__ == '__main__':
 	#wait for IDA pro completing analysis

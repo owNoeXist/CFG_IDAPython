@@ -8,7 +8,7 @@ from idaapi import *
 from idautils import *
 from Instruction import x86_I,MIPS_I
 
-#=================================PCFG Function=====================================
+#=================================PCFG=====================================
 #Generate PCFG data
 def GeneratePCFG(FUNCTION,SIGN):
     pcfg = nx.DiGraph()
@@ -34,7 +34,7 @@ def GeneratePCFG(FUNCTION,SIGN):
 
     return pcfg
 
-#==================================CFG Function=====================================
+#==================================CFG=====================================
 #Generate CFG
 def GenerateCFG(PCFG):
     for destNode in range(len(PCFG)):
@@ -45,13 +45,13 @@ def GenerateCFG(PCFG):
                     PCFG.add_edge(srcNode, destNode)
                     break
 
-#==================================PFG Function=====================================
+#==================================PFG=====================================
 #Generate PFG
 def GeneratePFG(PCFG):
     pfg=[]
     PCFG.graph['pfg']=pfg
 
-#==============================Code literals Function===============================
+#==============================Code literals===============================
 #Generate code literals for each BasicBlock
 def GenerateLiteral(PCFG,SIGN):
     for nodeId in PCFG:
@@ -61,16 +61,13 @@ def GenerateLiteral(PCFG,SIGN):
         literals.append(GetInstructNum(bbAddr,SIGN))
         #code literals --String Number
         literals.append(GetStringNum(bbAddr,SIGN))
-        #code literals --Data Transfer
-        literals.append(GetInsTypeNum(bbAddr,SIGN,0))
         #code literals --Calculate
-        literals.append(GetInsTypeNum(bbAddr,SIGN,1))
-        #code literals --BitOperate
         literals.append(GetInsTypeNum(bbAddr,SIGN,2))
-        #code literals --Jump
-        literals.append(GetInsTypeNum(bbAddr,SIGN,4))
+        #code literals --BitOperate
+        literals.append(GetInsTypeNum(bbAddr,SIGN,3))
         #code literals --Call
-        literals.extend(GetCallNum(bbAddr,SIGN))
+        #literals.extend(GetCallNum(bbAddr,SIGN))
+        literals.append(GetCallNum(bbAddr,SIGN))
         #code literals --Return
         literals.append(GetInsTypeNum(bbAddr,SIGN,8))
         #Add features to node
@@ -138,7 +135,7 @@ def GetCallNum(BB,SIGN):
             elif opcode == 'la' and GetOpnd(instAddr,0) == '$t9':
                 funcType=SegName(GetOperandValue(instAddr,1))
             instAddr = NextHead(instAddr)
-    return num
+    return num[0]+num[1]
 
 #Collect Instruction number in one class from one basic block
 def GetInsTypeNum(BB,SIGN,TYPE):
@@ -161,7 +158,7 @@ def GetInsTypeNum(BB,SIGN,TYPE):
     return num
 
 
-#============================Semantic Sequence Function=============================
+#============================Semantic Sequence=============================
 #Generate semantic sequence for each BasicBlock
 def GenerateSemantic(PCFG,SIGN):
     for nodeId in PCFG:
@@ -184,7 +181,7 @@ def InstructionSequence(BB,SIGN):
             instAddr = NextHead(instAddr)
     return semantic
 
-#=================================Other Function=======================================
+
 #Obtain the function name from EA
 def get_unified_funcname(EA):
     funcName = GetFunctionName(EA)
