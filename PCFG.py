@@ -59,6 +59,8 @@ def GenerateLiteral(PCFG,SIGN):
         literals = []
         #code literals --Instruction Number
         literals.append(GetInstructNum(bbAddr,SIGN))
+        #code literals --Immediate Number
+        literals.append(GetImmediateNum(bbAddr,SIGN))
         #code literals --String Number
         literals.append(GetStringNum(bbAddr,SIGN))
         #code literals --Calculate
@@ -80,6 +82,36 @@ def GetInstructNum(BB,SIGN):
     while instAddr < BB[1]:
         num+=1
         instAddr = NextHead(instAddr)
+    return num
+
+
+#Collect immediate number from one basic block
+def GetImmediateNum(BB,SIGN):
+    num = 0
+    instAddr = BB[0]
+    if SIGN==0:
+        while instAddr < BB[1]:
+            opcode = GetMnem(instAddr)
+            if opcode in ['la','jalr','call', 'jal']:
+                instAddr = NextHead(instAddr)
+                continue
+            if opcode != 'lea':
+                for offset in range(3):
+                    try:
+                        optype = GetOpType(instAddr, offset)
+                        if optype == o_imm:
+                            num+=1
+                    except:
+                        pass
+            instAddr = NextHead(instAddr)
+    elif SIGN==1:
+        #Need repair
+        while instAddr < BB[1]:
+            opcode = GetMnem(instAddr)
+            if opcode != 'la':
+                num+=1
+            instAddr = NextHead(instAddr)
+
     return num
 
 #Collect string number from one basic block
