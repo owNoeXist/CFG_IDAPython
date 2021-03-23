@@ -10,7 +10,7 @@ from Instruction import x86_I,MIPS_I
 
 #=================================CFG=====================================
 #Generate CFG data
-def GeneratePCFG(FUNCTION,SIGN):
+def GenerateCFG(FUNCTION,SIGN):
     cfg = nx.DiGraph()
     #obtain basic block
     basicBlock = [(v.startEA, v.endEA) for v in FlowChart(FUNCTION)]

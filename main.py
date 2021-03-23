@@ -7,7 +7,7 @@ from idc import *
 from idaapi import *
 from idautils import *
 
-from PCFG import GeneratePCFG,get_unified_funcname,CheckInstruct
+from CFG import GenerateCFG,get_unified_funcname,CheckInstruct
 from Data import GenerateJson
 from Paraments import SIGN,SAVEDIR
 from Instruction import x86_I,MIPS_I
@@ -31,12 +31,12 @@ if __name__ == '__main__':
         funcEA = get_func(funcSEA)
         if CheckInstruct(funcEA,SIGN):
             continue
-        #Generate PCFG
-        pcfg = GeneratePCFG(funcEA,SIGN)
-        if len(pcfg)==1:
+        #Generate CFG
+        pcfg = GenerateCFG(funcEA,SIGN)
+        if len(cfg)==1:
             continue
         print funcName
-        rawJson = GenerateJson(funcName, pcfg)
+        rawJson = GenerateJson(funcName, cfg)
         file.write(json.dumps(rawJson)+'\n')
     file.close()
     
