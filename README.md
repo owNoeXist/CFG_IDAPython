@@ -1,5 +1,5 @@
-# PCFG_IDAPython
-The PCFG_IDAPython can exact PCFG by IDA pro.
+# CFG_IDAPython
+The CFG_IDAPython can exact CFG by IDA pro.
 
 ## How to run it
 These codes are based on IDAPython.
