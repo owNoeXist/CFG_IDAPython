@@ -8,10 +8,10 @@ from idaapi import *
 from idautils import *
 from Instruction import x86_I,MIPS_I
 
-#=================================PCFG=====================================
-#Generate PCFG data
+#=================================CFG=====================================
+#Generate CFG data
 def GeneratePCFG(FUNCTION,SIGN):
-    pcfg = nx.DiGraph()
+    cfg = nx.DiGraph()
     #obtain basic block
     basicBlock = [(v.startEA, v.endEA) for v in FlowChart(FUNCTION)]
 
@@ -19,105 +19,32 @@ def GeneratePCFG(FUNCTION,SIGN):
     for bb in basicBlock:
         #ignore blank block that IDA pro generated
         if bb[0]!=bb[1]:
-            nodeId = len(pcfg)
-            pcfg.add_node(nodeId)
-            pcfg.node[nodeId]['startEA'] = bb[0]
-            pcfg.node[nodeId]['endEA'] = bb[1]
-    if len(pcfg) == 1:
-        return pcfg
+            nodeId = len(cfg)
+            cfg.add_node(nodeId)
+            cfg.node[nodeId]['startEA'] = bb[0]
+            cfg.node[nodeId]['endEA'] = bb[1]
+    if len(cfg) == 1:
+        return cfg
     
-    #Generate pcfg
-    GenerateCFG(pcfg)
-    pcfg.graph['pfg']=[]
-    #GeneratePFG(pcfg)
-    GenerateLiteral(pcfg,SIGN)
-    GenerateSemantic(pcfg,SIGN)
-
-    return pcfg
-
-#==================================CFG=====================================
-#Generate CFG
-def GenerateCFG(PCFG):
-    for destNode in range(len(PCFG)):
-        refs = CodeRefsTo(PCFG.node[destNode]['startEA'], 1)
+    #Generate cfg
+    for destNode in range(len(cfg)):
+        refs = CodeRefsTo(cfg.node[destNode]['startEA'], 1)
         for ref in refs:
-            for srcNode in range(len(PCFG)):
-                if PCFG.node[srcNode]['startEA']<= ref < PCFG.node[srcNode]['endEA']:
-                    PCFG.add_edge(srcNode, destNode)
+            for srcNode in range(len(cfg)):
+                if cfg.node[srcNode]['startEA']<= ref < cfg.node[srcNode]['endEA']:
+                    cfg.add_edge(srcNode, destNode)
                     break
 
-#==================================PFG=====================================
-#Generate PFG
-def GeneratePFG(PCFG, SIGN):
-    argTo=[[],[],[],[]]
-    nodeNum=len(CFG)
-    nodeTo = [[] for i in range(nodeNum)]
-    affectPara=[[['rdi'],['rsi'],['rdx'],['rcx']],[['$a0'],['$a1'],['$a2'],['$a3']]]
-    for u,v in CFG.edges():
-        nodeTo[u].append(v)
-    for i in range(4):
-        nodeAccess=[]
-        ArgSearch(CFG, SIGN, nodeTo, argTo[i], nodeAccess, affectPara[SIGN][i], 0)
-    PCFG.graph['pfg']=argTo
+    GenerateLiteral(cfg,SIGN)
+    GenerateSemantic(cfg,SIGN)
 
-def ArgSearch(PCFG, SIGN, NODE_TO, ARG_TO, NODE_ACCESS, AFFECT_PARA, NODE_NOW):
-    affectPara=[]
-    affectPara.extend(AFFECT_PARA)
-    #Search data affected by arg
-    instAddr = PCFG.node[NODE_NOW]['startEA']
-    if SIGN==0:
-        while instAddr < PCFG.node[NODE_NOW]['endEA']:
-            op0=GetOpnd(instAddr, 0)
-            op1=GetOpnd(instAddr, 1)
-            op2=GetOpnd(instAddr, 2)
-            if op0 in affectPara and op1 != '':
-                affectPara.remove(op0)
-            if op1 in affectPara:
-                if NODE_NOW not in ARG_TO:
-                    ARG_TO.append(NODE_NOW)
-                affectPara.append(op0)
-            if op2 in affectPara:
-                if NODE_NOW not in ARG_TO:
-                    ARG_TO.append(NODE_NOW)
-                affectPara.append(op0)
-            instAddr = NextHead(instAddr)
-    elif SIGN==1:
-        while instAddr < PCFG.node[NODE_NOW]['endEA']:
-            op0=GetOpnd(instAddr, 0)
-            op1=GetOpnd(instAddr, 1)
-            op2=GetOpnd(instAddr, 2)
-            if op2 != '':
-                if op2 in affectPara:
-                    affectPara.remove(op2)
-                if op1 in affectPara:
-                    if NODE_NOW not in ARG_TO:
-                        ARG_TO.append(NODE_NOW)
-                    affectPara.append(op2)  
-                if op0 in affectPara:
-                    if NODE_NOW not in ARG_TO:
-                        ARG_TO.append(NODE_NOW)
-                    affectPara.append(op2)
-            elif op1!= '':
-                if op1 in affectPara:
-                    affectPara.remove(op1)
-                if op0 in affectPara:
-                    if NODE_NOW not in ARG_TO:
-                        ARG_TO.append(NODE_NOW)
-                    affectPara.append(op1)
-            instAddr = NextHead(instAddr)
-    #Search next node
-    for nodeNext in NODE_TO[NODE_NOW]:
-        if nodeNext in NODE_ACCESS:
-            continue
-        else:
-            NODE_ACCESS.append(nodeNext)
-            ArgSearch(CFG, SIGN, NODE_TO, ARG_TO, NODE_ACCESS, affectPara, nodeNext)
+    return cfg
 
 #==============================Code literals===============================
 #Generate code literals for each BasicBlock
-def GenerateLiteral(PCFG,SIGN):
-    for nodeId in PCFG:
-        bbAddr = [PCFG.node[nodeId]['startEA'],PCFG.node[nodeId]['endEA']]
+def GenerateLiteral(CFG,SIGN):
+    for nodeId in CFG:
+        bbAddr = [CFG.node[nodeId]['startEA'],CFG.node[nodeId]['endEA']]
         literals = []
         #code literals --Instruction Number
         literals.append(GetInstructNum(bbAddr,SIGN))
@@ -135,7 +62,7 @@ def GenerateLiteral(PCFG,SIGN):
         #code literals --Return
         literals.append(GetInsTypeNum(bbAddr,SIGN,8))
         #Add features to node
-        PCFG.node[nodeId]['literal']=literals
+        CFG.node[nodeId]['literal']=literals
 
 #Collect instruction number from one basic block
 def GetInstructNum(BB,SIGN):
@@ -145,7 +72,6 @@ def GetInstructNum(BB,SIGN):
         num+=1
         instAddr = NextHead(instAddr)
     return num
-
 
 #Collect immediate number from one basic block
 def GetImmediateNum(BB,SIGN):
@@ -254,11 +180,11 @@ def GetInsTypeNum(BB,SIGN,TYPE):
 
 #============================Semantic Sequence=============================
 #Generate semantic sequence for each BasicBlock
-def GenerateSemantic(PCFG,SIGN):
-    for nodeId in PCFG:
-        bbAddr = [PCFG.node[nodeId]['startEA'],PCFG.node[nodeId]['endEA']]
+def GenerateSemantic(CFG,SIGN):
+    for nodeId in CFG:
+        bbAddr = [CFG.node[nodeId]['startEA'],CFG.node[nodeId]['endEA']]
         #Exact semantic sequence from BasicBlock 
-        PCFG.node[nodeId]['semantic']=InstructionSequence(bbAddr,SIGN)
+        CFG.node[nodeId]['semantic']=InstructionSequence(bbAddr,SIGN)
 
 def InstructionSequence(BB,SIGN):
     semantic = []
