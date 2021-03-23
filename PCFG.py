@@ -28,7 +28,8 @@ def GeneratePCFG(FUNCTION,SIGN):
     
     #Generate pcfg
     GenerateCFG(pcfg)
-    GeneratePFG(pcfg)
+    pcfg.graph['pfg']=[]
+    #GeneratePFG(pcfg)
     GenerateLiteral(pcfg,SIGN)
     GenerateSemantic(pcfg,SIGN)
 
@@ -47,9 +48,70 @@ def GenerateCFG(PCFG):
 
 #==================================PFG=====================================
 #Generate PFG
-def GeneratePFG(PCFG):
-    pfg=[]
-    PCFG.graph['pfg']=pfg
+def GeneratePFG(PCFG, SIGN):
+    argTo=[[],[],[],[]]
+    nodeNum=len(CFG)
+    nodeTo = [[] for i in range(nodeNum)]
+    affectPara=[[['rdi'],['rsi'],['rdx'],['rcx']],[['$a0'],['$a1'],['$a2'],['$a3']]]
+    for u,v in CFG.edges():
+        nodeTo[u].append(v)
+    for i in range(4):
+        nodeAccess=[]
+        ArgSearch(CFG, SIGN, nodeTo, argTo[i], nodeAccess, affectPara[SIGN][i], 0)
+    PCFG.graph['pfg']=argTo
+
+def ArgSearch(PCFG, SIGN, NODE_TO, ARG_TO, NODE_ACCESS, AFFECT_PARA, NODE_NOW):
+    affectPara=[]
+    affectPara.extend(AFFECT_PARA)
+    #Search data affected by arg
+    instAddr = PCFG.node[NODE_NOW]['startEA']
+    if SIGN==0:
+        while instAddr < PCFG.node[NODE_NOW]['endEA']:
+            op0=GetOpnd(instAddr, 0)
+            op1=GetOpnd(instAddr, 1)
+            op2=GetOpnd(instAddr, 2)
+            if op0 in affectPara and op1 != '':
+                affectPara.remove(op0)
+            if op1 in affectPara:
+                if NODE_NOW not in ARG_TO:
+                    ARG_TO.append(NODE_NOW)
+                affectPara.append(op0)
+            if op2 in affectPara:
+                if NODE_NOW not in ARG_TO:
+                    ARG_TO.append(NODE_NOW)
+                affectPara.append(op0)
+            instAddr = NextHead(instAddr)
+    elif SIGN==1:
+        while instAddr < PCFG.node[NODE_NOW]['endEA']:
+            op0=GetOpnd(instAddr, 0)
+            op1=GetOpnd(instAddr, 1)
+            op2=GetOpnd(instAddr, 2)
+            if op2 != '':
+                if op2 in affectPara:
+                    affectPara.remove(op2)
+                if op1 in affectPara:
+                    if NODE_NOW not in ARG_TO:
+                        ARG_TO.append(NODE_NOW)
+                    affectPara.append(op2)  
+                if op0 in affectPara:
+                    if NODE_NOW not in ARG_TO:
+                        ARG_TO.append(NODE_NOW)
+                    affectPara.append(op2)
+            elif op1!= '':
+                if op1 in affectPara:
+                    affectPara.remove(op1)
+                if op0 in affectPara:
+                    if NODE_NOW not in ARG_TO:
+                        ARG_TO.append(NODE_NOW)
+                    affectPara.append(op1)
+            instAddr = NextHead(instAddr)
+    #Search next node
+    for nodeNext in NODE_TO[NODE_NOW]:
+        if nodeNext in NODE_ACCESS:
+            continue
+        else:
+            NODE_ACCESS.append(nodeNext)
+            ArgSearch(CFG, SIGN, NODE_TO, ARG_TO, NODE_ACCESS, affectPara, nodeNext)
 
 #==============================Code literals===============================
 #Generate code literals for each BasicBlock
