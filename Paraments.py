@@ -1,2 +1,2 @@
 SIGN=0
-SAVEDIR=r'C:\Users\nocan\Desktop\DataX86-O0.json'
+SAVEDIR=r'C:\Users\nocan\Desktop\Data\Dest\coreutils\DataX86-O2.json'

@@ -32,7 +32,7 @@ if __name__ == '__main__':
         if CheckInstruct(funcEA,SIGN):
             continue
         #Generate CFG
-        pcfg = GenerateCFG(funcEA,SIGN)
+        cfg = GenerateCFG(funcEA,SIGN)
         if len(cfg)==1:
             continue
         print funcName

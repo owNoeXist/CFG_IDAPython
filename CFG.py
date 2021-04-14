@@ -181,27 +181,39 @@ def GetInsTypeNum(BB,SIGN,TYPE):
 #============================Semantic Sequence=============================
 #Generate semantic sequence for each BasicBlock
 def GenerateSemantic(CFG,SIGN):
+    dic = []
+    if SIGN == 0:
+        dic = list(x86_I)
+    elif SIGN == 1:
+        dic = list(MIPS_I)
+    dic.sort()
     for nodeId in CFG:
         bbAddr = [CFG.node[nodeId]['startEA'],CFG.node[nodeId]['endEA']]
         #Exact semantic sequence from BasicBlock 
-        CFG.node[nodeId]['semantic']=InstructionSequence(bbAddr,SIGN)
+        CFG.node[nodeId]['semantic']=InstructionSequence(bbAddr,SIGN,dic)
 
-def InstructionSequence(BB,SIGN):
+def InstructionSequence(BB,SIGN,dic):
     semantic = []
     instAddr = BB[0]
     if SIGN == 0:
         while instAddr < BB[1]:
             opcode = GetMnem(instAddr)
-            semantic.append(x86_I[opcode])
+            for i in range(len(dic)):
+                if opcode == dic[i]:
+                    semantic.append(i+1)
+                    break
             instAddr = NextHead(instAddr)
     elif SIGN == 1:
         while instAddr < BB[1]:
             opcode = GetMnem(instAddr)
-            semantic.append(MIPS_I[opcode])
+            for i in range(len(dic)):
+                if opcode == dic[i]:
+                    semantic.append(i+1)
+                    break
             instAddr = NextHead(instAddr)
     return semantic
 
-
+#=============================Other Function==============================
 #Obtain the function name from EA
 def get_unified_funcname(EA):
     funcName = GetFunctionName(EA)
